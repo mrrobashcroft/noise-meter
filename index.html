@@ -5,141 +5,58 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Classroom Noise Meter</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Font: Assistant -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
     <style>
-        body { font-family: system-ui, -apple-system, sans-serif; }
+        body { 
+            font-family: 'Assistant', system-ui, -apple-system, sans-serif; 
+        }
     </style>
 </head>
-<body class="bg-slate-100 flex flex-col items-center justify-center min-h-screen p-4 text-slate-800">
+<body class="bg-slate-100 flex flex-col min-h-screen text-slate-800">
     
-    <div class="bg-white p-8 rounded-3xl shadow-xl w-full max-w-2xl text-center border border-slate-200">
-        <h1 class="text-3xl font-bold mb-2">Classroom Volume</h1>
-        <p class="text-slate-500 mb-8">Keep the noise in the green zone!</p>
+    <!-- TOP NAVIGATION BAR -->
+    <nav class="w-full bg-[#1a647e] text-white border-b border-[#144f63] px-4 sm:px-6 py-3 flex items-center justify-between shadow-md">
         
-        <!-- Start Screen -->
-        <div id="startScreen">
-            <button id="startBtn" class="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-4 rounded-2xl font-bold text-xl transition-all shadow-lg hover:shadow-emerald-500/30">
-                🎤 Start Microphone
-            </button>
-            <p id="errorMsg" class="text-red-500 font-bold mt-4 hidden"></p>
-        </div>
-
-        <!-- Meter Screen -->
-        <div id="meterScreen" class="hidden w-full animate-fade-in">
-            
-            <!-- Target Selector -->
-            <div class="flex justify-center gap-3 mb-6 bg-slate-50 p-2 rounded-xl inline-flex mx-auto border border-slate-200">
-                <button class="target-btn px-4 py-2 rounded-lg font-bold bg-white text-emerald-700 shadow-sm border border-emerald-200" data-target="35">🤫 Silence</button>
-                <button class="target-btn px-4 py-2 rounded-lg font-bold text-slate-500 hover:bg-slate-200" data-target="60">💬 Quiet Talk</button>
-                <button class="target-btn px-4 py-2 rounded-lg font-bold text-slate-500 hover:bg-slate-200" data-target="85">🗣️ Group Work</button>
-            </div>
-
-            <!-- Volume Bar -->
-            <div class="w-full h-12 bg-slate-100 rounded-full overflow-hidden relative border border-slate-200 shadow-inner">
-                <!-- Target Threshold Marker -->
-                <div id="targetLine" class="absolute top-0 bottom-0 w-1 bg-slate-800 z-10 transition-all duration-300" style="left: 35%;"></div>
-                <!-- Dynamic Bar -->
-                <div id="volumeBar" class="h-full bg-emerald-500 transition-all duration-75 w-0"></div>
-            </div>
-            
-            <!-- Status Text -->
-            <h2 id="statusText" class="text-3xl font-bold mt-6 text-emerald-500">Perfect!</h2>
-            
-            <!-- Sensitivity Slider -->
-            <div class="mt-8 flex items-center justify-center gap-3 text-sm font-bold text-slate-500 bg-slate-50 py-2 px-4 rounded-xl inline-flex border border-slate-200">
-                <span>Mic Sensitivity:</span>
-                <input type="range" id="sensitivity" min="0.1" max="1.5" step="0.1" value="0.5" class="w-32 accent-emerald-500 cursor-pointer">
-            </div>
-        </div>
-    </div>
-
-    <script>
-        let audioCtx, analyser, microphone, gainNode;
-        let targetThreshold = 35; // Matches the first button's data-target
-        let sensitivity = 0.5;
-        let smoothedVolume = 0;
+        <!-- Left: Profile Photo & Name -->
+        <a href="https://www.mrrobashcroft.com" class="flex items-center gap-3 text-lg font-normal hover:text-slate-200 transition-colors">
+            <img src="https://lh7-us.googleusercontent.com/sitesv-images-rt/AMxu72s2-X-jeMUhzG8egyQvSlmELyLcgm9gbPPk5J_ifUAJ2pNhGz-4ohkg9FeI_vINYxDvbBL91UIOhDHVQH54eX5fE61r8Me5P7_OZ8Ud5VWSLT2CX2GpA_F2e8SoLAVKL_JMl-iSlhr02Ao0YlYxSxyZmSrw-DYkmiVqCvFMZLHutO2h8Fg8E3LOgF6VPF0=w16383" alt="Rob Ashcroft Profile" class="w-9 h-9 rounded-full object-cover border border-white/20">
+            <span>Rob Ashcroft</span>
+        </a>
         
-        const els = {
-            startBtn: document.getElementById('startBtn'),
-            errorMsg: document.getElementById('errorMsg'),
-            startScreen: document.getElementById('startScreen'),
-            meterScreen: document.getElementById('meterScreen'),
-            volumeBar: document.getElementById('volumeBar'),
-            statusText: document.getElementById('statusText'),
-            targetLine: document.getElementById('targetLine'),
-            sensitivity: document.getElementById('sensitivity')
-        };
+        <!-- Right: Links -->
+        <div class="flex gap-4 sm:gap-6 text-sm sm:text-base font-normal">
+            <a href="https://www.mrrobashcroft.com" class="hover:text-slate-200 transition-colors">Home</a>
+        </div>
+    </nav>
 
-        els.startBtn.onclick = async () => {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                
-                gainNode = audioCtx.createGain();
-                gainNode.gain.value = sensitivity;
-                
-                analyser = audioCtx.createAnalyser();
-                analyser.fftSize = 256;
-                
-                microphone = audioCtx.createMediaStreamSource(stream);
-                microphone.connect(gainNode);
-                gainNode.connect(analyser);
-                
-                els.startScreen.classList.add('hidden');
-                els.meterScreen.classList.remove('hidden');
-                
-                processAudio();
-            } catch (err) {
-                els.errorMsg.textContent = "Microphone access blocked. Are you running this inside a Google Sites Embed block?";
-                els.errorMsg.classList.remove('hidden');
-            }
-        };
+    <!-- MAIN APP WRAPPER -->
+    <main class="flex-1 flex flex-col items-center justify-center p-4">
+        <div class="bg-white p-8 rounded-3xl shadow-xl w-full max-w-2xl text-center border border-slate-200">
+            <h1 class="text-3xl font-bold mb-2">Classroom Volume</h1>
+            <p class="text-slate-500 mb-8">Keep the noise in the green zone!</p>
+            
+            <!-- Start Screen -->
+            <div id="startScreen">
+                <button id="startBtn" class="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-4 rounded-2xl font-bold text-xl transition-all shadow-lg hover:shadow-emerald-500/30">
+                    🎤 Start Microphone
+                </button>
+                <p id="errorMsg" class="text-red-500 font-bold mt-4 hidden"></p>
+            </div>
 
-        function processAudio() {
-            const dataArray = new Float32Array(analyser.fftSize);
-            analyser.getFloatTimeDomainData(dataArray);
-            
-            let sumSquare = 0;
-            for (let i = 0; i < dataArray.length; i++) sumSquare += dataArray[i] * dataArray[i];
-            const rms = Math.sqrt(sumSquare / dataArray.length);
-            
-            // Map RMS to a 0-100 scale and smooth it so it doesn't flicker wildly
-            const rawVolume = Math.min(100, Math.max(0, rms * 800));
-            smoothedVolume = (0.15 * rawVolume) + (0.85 * smoothedVolume); 
-            
-            els.volumeBar.style.width = smoothedVolume + '%';
-            
-            // Visual feedback based on target
-            if (smoothedVolume > targetThreshold) {
-                els.volumeBar.className = 'h-full transition-all duration-75 bg-red-500';
-                els.statusText.textContent = 'Too Loud! 🚨';
-                els.statusText.className = 'text-3xl font-bold mt-6 text-red-500';
-            } else {
-                els.volumeBar.className = 'h-full transition-all duration-75 bg-emerald-500';
-                els.statusText.textContent = 'Perfect! 😊';
-                els.statusText.className = 'text-3xl font-bold mt-6 text-emerald-500';
-            }
-            
-            requestAnimationFrame(processAudio);
-        }
-
-        // Target Selectors
-        document.querySelectorAll('.target-btn').forEach(btn => {
-            btn.onclick = (e) => {
-                // Reset all buttons
-                document.querySelectorAll('.target-btn').forEach(b => b.className = 'target-btn px-4 py-2 rounded-lg font-bold text-slate-500 hover:bg-slate-200');
-                // Highlight active button
-                e.target.className = 'target-btn px-4 py-2 rounded-lg font-bold bg-white text-emerald-700 shadow-sm border border-emerald-200';
+            <!-- Meter Screen -->
+            <div id="meterScreen" class="hidden w-full animate-fade-in">
                 
-                targetThreshold = parseInt(e.target.dataset.target);
-                els.targetLine.style.left = targetThreshold + '%';
-            }
-        });
+                <!-- Target Selector -->
+                <div class="flex justify-center gap-3 mb-6 bg-slate-50 p-2 rounded-xl inline-flex mx-auto border border-slate-200">
+                    <button class="target-btn px-4 py-2 rounded-lg font-bold bg-white text-emerald-700 shadow-sm border border-emerald-200" data-target="35">🤫 Silence</button>
+                    <button class="target-btn px-4 py-2 rounded-lg font-bold text-slate-500 hover:bg-slate-200" data-target="60">💬 Quiet Talk</button>
+                    <button class="target-btn px-4 py-2 rounded-lg font-bold text-slate-500 hover:bg-slate-200" data-target="85">🗣️ Group Work</button>
+                </div>
 
-        // Sensitivity Control
-        els.sensitivity.oninput = (e) => {
-            sensitivity = parseFloat(e.target.value);
-            if (gainNode) gainNode.gain.value = sensitivity;
-        };
-    </script>
-</body>
-</html>
+                <!-- Volume Bar -->
+                <div class="w-full h-
